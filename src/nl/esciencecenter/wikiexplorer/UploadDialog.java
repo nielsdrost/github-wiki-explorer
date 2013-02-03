@@ -30,13 +30,13 @@ import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 
 public class UploadDialog extends JDialog implements PropertyChangeListener {
-    
+
     private static final long serialVersionUID = 1L;
 
     private final JPanel contentPanel = new JPanel();
 
     private final JTextArea textArea;
-    private final JProgressBar progressBar; 
+    private final JProgressBar progressBar;
 
     private final String username;
     private final char[] password;
@@ -57,14 +57,13 @@ public class UploadDialog extends JDialog implements PropertyChangeListener {
     // }
     // }
 
-
     public UploadDialog(String username, char[] password, File file) {
         this.username = username;
         this.password = password;
         this.file = file;
 
         setTitle("Uploading file");
-        setBounds(100, 100, 450, 270);
+        setBounds(100, 100, 531, 359);
         getContentPane().setLayout(new BorderLayout());
         contentPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
         getContentPane().add(contentPanel, BorderLayout.CENTER);
@@ -108,28 +107,29 @@ public class UploadDialog extends JDialog implements PropertyChangeListener {
     private void copy(File src, File dst) throws IOException {
         byte[] buffer = new byte[1000];
 
-        try (FileInputStream in = new FileInputStream(src); 
-             FileOutputStream out = new FileOutputStream(dst)) {
+        FileInputStream in = new FileInputStream(src);
+        FileOutputStream out = new FileOutputStream(dst);
 
-            while (true) {
-                int read = in.read(buffer);
+        while (true) {
+            int read = in.read(buffer);
 
-                if (read == -1) {
-                    out.flush();
-                    return;
-                }
-
-                out.write(buffer, 0, read);
+            if (read == -1) {
+                out.flush();
+                in.close();
+                out.close();
+                return;
             }
-        }
 
+            out.write(buffer, 0, read);
+        }
     }
 
     private class Uploader extends SwingWorker<Void, String> {
 
         public Void doInBackground() throws Exception {
-            
-            File localRepo = new File(System.getProperty("java.io.tmpdir") + File.separator + "wiki-uploader-" + System.getProperty("user.name"));
+
+            File localRepo = new File(System.getProperty("java.io.tmpdir") + File.separator + "wiki-uploader-"
+                    + System.getProperty("user.name"));
 
             if (username == null || username.isEmpty()) {
                 throw new Exception("username not specified");
@@ -140,13 +140,13 @@ public class UploadDialog extends JDialog implements PropertyChangeListener {
             }
 
             publish("uploading " + file);
-            publish("target repository: " + GUI.REMOTE_REPOSITORY );
+            publish("target repository: " + GUI.REMOTE_REPOSITORY);
 
             CredentialsProvider.setDefault(new UsernamePasswordCredentialsProvider(username, password));
 
             Git git;
             if (localRepo.exists()) {
-                publish("opening existing repository at " + localRepo );
+                publish("opening existing repository at " + localRepo);
                 git = Git.open(localRepo);
                 publish("pulling updates to " + localRepo);
                 git.pull().call();
@@ -154,58 +154,59 @@ public class UploadDialog extends JDialog implements PropertyChangeListener {
                 publish("cloning repository at " + localRepo);
                 git = Git.cloneRepository().setURI(GUI.REMOTE_REPOSITORY).setDirectory(localRepo).call();
             }
-           
+
             File attachmentDir = new File(localRepo, "attachments");
-            
+
             if (!attachmentDir.exists()) {
                 publish("creating attachment dir " + attachmentDir);
                 attachmentDir.mkdir();
             }
-            
+
             File targetFile = new File(attachmentDir, file.getName());
-            
+
             if (targetFile.exists()) {
-                int result = JOptionPane.showConfirmDialog(contentPanel, "File " + file.getName() + " already exists in repository. Overwrite?", "Overwrite?",
-                        JOptionPane.YES_NO_OPTION);
-                
+                int result = JOptionPane.showConfirmDialog(contentPanel, "File " + file.getName()
+                        + " already exists in repository. Overwrite?", "Overwrite?", JOptionPane.YES_NO_OPTION);
+
                 if (result == JOptionPane.NO_OPTION) {
                     return null;
                 }
             }
 
             publish("copying file to " + targetFile);
-            
+
             copy(file, targetFile);
-            
+
             publish("adding file to repository");
 
-            git.add().addFilepattern("attachments" + File.separator + file.getName()).call();
-            
+            git.add().addFilepattern("attachments/" + file.getName()).call();
+
             publish("creating attachment overview page");
-            
+
             File attachmentOverview = new File(localRepo, "Attachments.md");
             FileWriter writer = new FileWriter(attachmentOverview);
-            
+
             writer.write("| File Name | Link | Preview |\n");
             writer.write("| --------- | ---- | ------- |\n");
-            
-            for (File attachment: attachmentDir.listFiles()) {
+
+            for (File attachment : attachmentDir.listFiles()) {
                 String name = attachment.getName();
-                writer.write("| attachments/" + name + " | [[" + name + "| attachments/" + name + "]] | [[ attachments/" + name  + "|width=100px|height=100px]] |\n");
+                writer.write("| attachments/" + name + " | [[" + name + "| attachments/" + name
+                        + "]] | [[ attachments/" + name + "|width=100px|height=100px]] |\n");
             }
             writer.flush();
             writer.close();
-            
+
             git.add().addFilepattern("Attachments.md").call();
 
-            publish("comitting to local repository");
-            
+            publish("committing to local repository");
+
             git.commit().setMessage("adding new file " + file.getName()).call();
 
             publish("pushing to remote repository");
-            
+
             git.push().call();
-            
+
             publish("done!");
 
             return null;
@@ -226,14 +227,16 @@ public class UploadDialog extends JDialog implements PropertyChangeListener {
                 uploader.get();
                 progressBar.setIndeterminate(false);
                 progressBar.setValue(100);
-                JOptionPane.showMessageDialog(contentPanel, "Done uploading file. File available in the wiki as:\n[[attachments/" + file.getName() + "]]", "Uploading done",
-                       
-                         JOptionPane.PLAIN_MESSAGE);
+                JOptionPane.showMessageDialog(contentPanel,
+                        "Done uploading file. File available in the wiki as:\n[[attachments/" + file.getName() + "]]",
+                        "Uploading done",
+
+                        JOptionPane.PLAIN_MESSAGE);
             } catch (Exception exception) {
                 JOptionPane.showMessageDialog(contentPanel, "Error while uploading file: " + exception.getMessage(),
                         "Upload Error", JOptionPane.ERROR_MESSAGE);
             }
-            
+
             setVisible(false);
             dispose();
         }
