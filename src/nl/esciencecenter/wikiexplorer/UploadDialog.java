@@ -9,6 +9,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.swing.JButton;
@@ -189,10 +190,13 @@ public class UploadDialog extends JDialog implements PropertyChangeListener {
             writer.write("| File Name | Link | Preview |\n");
             writer.write("| --------- | ---- | ------- |\n");
 
-            for (File attachment : attachmentDir.listFiles()) {
+            File[] files = attachmentDir.listFiles();
+            Arrays.sort(files);
+            
+            for (File attachment : files) {
                 String name = attachment.getName();
                 writer.write("| attachments/" + name + " | [[" + name + "| attachments/" + name
-                        + "]] | [[ attachments/" + name + "|width=100px|height=100px]] |\n");
+                        + "]] | [[ attachments/" + name + "|height=100px]] |\n");
             }
             writer.flush();
             writer.close();
