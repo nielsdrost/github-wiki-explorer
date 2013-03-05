@@ -24,9 +24,10 @@ import javax.swing.JTextArea;
 
 public class GUI {
     
-    public static final String REMOTE_REPOSITORY = "https://github.com/NLeSC/eWaterCycle.wiki.git";
-    public static final String ATTACHMENT_OVERVIEW_URL = "https://github.com/NLeSC/eWaterCycle/wiki/Attachments";
-
+    public static String getRemoteRepository(String projectName) {
+        return "https://github.com/" + projectName + ".wiki.git";
+    }
+    
     private JFrame frmUploadAFile;
     private JPasswordField passwordField;
     private JTextField usernamefield;
@@ -37,6 +38,8 @@ public class GUI {
     private File file = null;
     private final Action uploadAction = new UploadAction();
     private JTextArea textField;
+    private JLabel lblProject;
+    private JTextField projectField;
 
     /**
      * Launch the application.
@@ -68,60 +71,69 @@ public class GUI {
         frmUploadAFile = new JFrame();
         frmUploadAFile.setResizable(false);
         frmUploadAFile.setTitle("Upload a file to the Wiki");
-        frmUploadAFile.setBounds(100, 100, 489, 285);
+        frmUploadAFile.setBounds(100, 100, 532, 307);
         frmUploadAFile.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         JPanel panel = new JPanel();
         frmUploadAFile.getContentPane().add(panel, BorderLayout.CENTER);
-
-        JLabel lblUsername = new JLabel("Username");
-
-        usernamefield = new JTextField();
-        usernamefield.setColumns(10);
-
-        JLabel lblPassword = new JLabel("Password");
-
-        passwordField = new JPasswordField();
-
-        JLabel lblFile = new JLabel("File");
-
-        selectedFileField = new JTextField();
-        selectedFileField.setEditable(false);
-        selectedFileField.setColumns(10);
         panel.setLayout(new FormLayout(new ColumnSpec[] {
                 FormFactory.RELATED_GAP_COLSPEC,
-                ColumnSpec.decode("72px"),
+                ColumnSpec.decode("80px"),
+                FormFactory.RELATED_GAP_COLSPEC,
+                ColumnSpec.decode("119px:grow"),
                 FormFactory.RELATED_GAP_COLSPEC,
                 ColumnSpec.decode("119px"),
                 FormFactory.RELATED_GAP_COLSPEC,
-                ColumnSpec.decode("119px"),
-                FormFactory.RELATED_GAP_COLSPEC,
-                ColumnSpec.decode("max(54dlu;default)"),},
+                ColumnSpec.decode("50dlu"),
+                FormFactory.RELATED_GAP_COLSPEC,},
             new RowSpec[] {
                 FormFactory.RELATED_GAP_ROWSPEC,
                 RowSpec.decode("19px"),
                 FormFactory.RELATED_GAP_ROWSPEC,
                 RowSpec.decode("19px"),
                 FormFactory.RELATED_GAP_ROWSPEC,
+                FormFactory.DEFAULT_ROWSPEC,
+                FormFactory.RELATED_GAP_ROWSPEC,
                 RowSpec.decode("19px"),
                 FormFactory.RELATED_GAP_ROWSPEC,
                 FormFactory.DEFAULT_ROWSPEC,
                 FormFactory.RELATED_GAP_ROWSPEC,
                 FormFactory.DEFAULT_ROWSPEC,
                 FormFactory.RELATED_GAP_ROWSPEC,
-                FormFactory.DEFAULT_ROWSPEC,
-                FormFactory.RELATED_GAP_ROWSPEC,
                 RowSpec.decode("max(27dlu;default)"),}));
-        panel.add(lblUsername, "2, 2, left, center");
-        panel.add(usernamefield, "4, 2, 5, 1, fill, top");
-        panel.add(lblPassword, "2, 4, right, center");
-        panel.add(passwordField, "4, 4, 5, 1, fill, top");
-        panel.add(lblFile, "2, 6, right, center");
-        panel.add(selectedFileField, "4, 6, 3, 1, fill, top");
-
-        JButton btnChooseFile = new JButton("Choose File");
-        btnChooseFile.setAction(chooseFileAction);
-        panel.add(btnChooseFile, "8, 6");
+        
+        lblProject = new JLabel("Project");
+        panel.add(lblProject, "2, 2, right, default");
+                                        
+                                        projectField = new JTextField();
+                                        projectField.setText("NLeSC/eWaterCycle");
+                                        projectField.setColumns(10);
+                                        panel.add(projectField, "4, 2, 5, 1, fill, default");
+                                        
+                                                JLabel lblUsername = new JLabel("Username");
+                                                panel.add(lblUsername, "2, 4, right, center");
+                                
+                                        usernamefield = new JTextField();
+                                        usernamefield.setColumns(10);
+                                        panel.add(usernamefield, "4, 4, 5, 1, fill, top");
+                        
+                                JLabel lblPassword = new JLabel("Password");
+                                panel.add(lblPassword, "2, 6, right, center");
+                        
+                                passwordField = new JPasswordField();
+                                panel.add(passwordField, "4, 6, 5, 1, fill, top");
+        
+                JLabel lblFile = new JLabel("File");
+                panel.add(lblFile, "2, 8, right, center");
+        
+                selectedFileField = new JTextField();
+                selectedFileField.setEditable(false);
+                selectedFileField.setColumns(10);
+                panel.add(selectedFileField, "4, 8, 3, 1, fill, top");
+        
+                JButton btnChooseFile = new JButton("Choose File");
+                btnChooseFile.setAction(chooseFileAction);
+                panel.add(btnChooseFile, "8, 8");
 
         btnUpload = new JButton("Upload");
         btnUpload.setAction(uploadAction);
@@ -135,8 +147,7 @@ public class GUI {
         });
         panel.add(btnCancel, "6, 10");
         
-        textField = new JTextArea("Attchments will be available at the wiki at:\n" + ATTACHMENT_OVERVIEW_URL 
-                + "\nand can be linked using [[attachments/FILENAME]]");
+        textField = new JTextArea("Attchments will be available at the wiki at:\nhttps://github.com/USER/PROJECT_NAME/wiki/Attachments\ne.g.  https://github.com/NLeSC/some-project/wiki/Attachments\nand can be linked using [[attachments/FILENAME]]");
         textField.setRows(2);
         textField.setEditable(false);
         panel.add(textField, "4, 14, 5, 1, fill, fill");
@@ -173,7 +184,7 @@ public class GUI {
 
         public void actionPerformed(ActionEvent e) {
             
-            new UploadDialog(usernamefield.getText(), passwordField.getPassword(), file);
+            new UploadDialog(projectField.getText(), usernamefield.getText(), passwordField.getPassword(), file);
           
         }
     }

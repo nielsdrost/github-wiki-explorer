@@ -39,6 +39,7 @@ public class UploadDialog extends JDialog implements PropertyChangeListener {
     private final JTextArea textArea;
     private final JProgressBar progressBar;
 
+    private final String project;
     private final String username;
     private final char[] password;
     private final File file;
@@ -58,7 +59,8 @@ public class UploadDialog extends JDialog implements PropertyChangeListener {
     // }
     // }
 
-    public UploadDialog(String username, char[] password, File file) {
+    public UploadDialog(String project, String username, char[] password, File file) {
+        this.project = project;
         this.username = username;
         this.password = password;
         this.file = file;
@@ -129,7 +131,7 @@ public class UploadDialog extends JDialog implements PropertyChangeListener {
 
         public Void doInBackground() throws Exception {
 
-            File localRepo = new File(System.getProperty("java.io.tmpdir") + File.separator + "wiki-uploader-"
+            File localRepo = new File(System.getProperty("java.io.tmpdir") + File.separator + "wiki-uploader-" + project.replaceAll("/", "-") + "-"
                     + System.getProperty("user.name"));
 
             if (username == null || username.isEmpty()) {
@@ -141,7 +143,7 @@ public class UploadDialog extends JDialog implements PropertyChangeListener {
             }
 
             publish("uploading " + file);
-            publish("target repository: " + GUI.REMOTE_REPOSITORY);
+            publish("target repository: " + GUI.getRemoteRepository(project));
 
             CredentialsProvider.setDefault(new UsernamePasswordCredentialsProvider(username, password));
 
@@ -153,7 +155,7 @@ public class UploadDialog extends JDialog implements PropertyChangeListener {
                 git.pull().call();
             } else {
                 publish("cloning repository at " + localRepo);
-                git = Git.cloneRepository().setURI(GUI.REMOTE_REPOSITORY).setDirectory(localRepo).call();
+                git = Git.cloneRepository().setURI(GUI.getRemoteRepository(project)).setDirectory(localRepo).call();
             }
 
             File attachmentDir = new File(localRepo, "attachments");
