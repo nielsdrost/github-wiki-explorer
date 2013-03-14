@@ -11,6 +11,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -131,8 +132,12 @@ public class UploadDialog extends JDialog implements PropertyChangeListener {
 
         public Void doInBackground() throws Exception {
 
-            File localRepo = new File(System.getProperty("java.io.tmpdir") + File.separator + "wiki-uploader-" + project.replaceAll("/", "-") + "-"
-                    + System.getProperty("user.name"));
+            File localRepo = new File(System.getProperty("java.io.tmpdir") + File.separator
+                    + UUID.randomUUID().toString());
+
+            if (localRepo.exists()) {
+                throw new Exception("Error: tmpDir already exists: " + localRepo);
+            }
 
             if (username == null || username.isEmpty()) {
                 throw new Exception("username not specified");
@@ -143,20 +148,14 @@ public class UploadDialog extends JDialog implements PropertyChangeListener {
             }
 
             publish("uploading " + file);
+            
             publish("target repository: " + GUI.getRemoteRepository(project));
 
             CredentialsProvider.setDefault(new UsernamePasswordCredentialsProvider(username, password));
 
-            Git git;
-            if (localRepo.exists()) {
-                publish("opening existing repository at " + localRepo);
-                git = Git.open(localRepo);
-                publish("pulling updates to " + localRepo);
-                git.pull().call();
-            } else {
-                publish("cloning repository at " + localRepo);
-                git = Git.cloneRepository().setURI(GUI.getRemoteRepository(project)).setDirectory(localRepo).call();
-            }
+            publish("cloning repository to " + localRepo);
+            
+            Git git = Git.cloneRepository().setURI(GUI.getRemoteRepository(project)).setDirectory(localRepo).call();
 
             File attachmentDir = new File(localRepo, "attachments");
 
@@ -172,6 +171,7 @@ public class UploadDialog extends JDialog implements PropertyChangeListener {
                         + " already exists in repository. Overwrite?", "Overwrite?", JOptionPane.YES_NO_OPTION);
 
                 if (result == JOptionPane.NO_OPTION) {
+                    deleteDirectory(localRepo);
                     return null;
                 }
             }
@@ -186,7 +186,7 @@ public class UploadDialog extends JDialog implements PropertyChangeListener {
 
             publish("creating attachment overview page");
 
-            File attachmentOverview = new File(localRepo, "Attachments.md");
+            File attachmentOverview = new File(localRepo, "List-of-Attachments.md");
             FileWriter writer = new FileWriter(attachmentOverview);
 
             writer.write("| File Name | Link | Preview |\n");
@@ -194,16 +194,16 @@ public class UploadDialog extends JDialog implements PropertyChangeListener {
 
             File[] files = attachmentDir.listFiles();
             Arrays.sort(files);
-            
+
             for (File attachment : files) {
                 String name = attachment.getName();
                 writer.write("| attachments/" + name + " | [[" + name + "| attachments/" + name
-                        + "]] | [[ attachments/" + name + "|height=100px]] |\n");
+                        + "]] | [[ attachments/" + name + "|height=100px|width=100px]] |\n");
             }
             writer.flush();
             writer.close();
 
-            git.add().addFilepattern("Attachments.md").call();
+            git.add().addFilepattern("List-of-Attachments.md").call();
 
             publish("committing to local repository");
 
@@ -213,9 +213,21 @@ public class UploadDialog extends JDialog implements PropertyChangeListener {
 
             git.push().call();
 
+            publish("cleaning up tmpDir");
+            deleteDirectory(localRepo);
+
             publish("done!");
 
             return null;
+        }
+
+        private void deleteDirectory(File directory) {
+            for (File file : directory.listFiles()) {
+                if (file.isDirectory()) {
+                    deleteDirectory(file);
+                }
+                file.delete();
+            }
         }
 
         @Override
